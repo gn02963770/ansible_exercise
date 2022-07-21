@@ -11,5 +11,9 @@
 #ansible -i inventory -m copy -a "src=index.html dest=/var/www/html/index.html" web01 --become
 
 #exercise3
-ansible-playbook -i inventory web_db.yaml --syntax-check
-ansible-playbook -i inventory web_db.yaml
+#ansible-playbook -i inventory web_db.yaml --syntax-check
+#ansible-playbook -i inventory web_db.yaml
+
+#exercise4
+#https://docs.ansible.com/ansible/2.9/modules/list_of_database_modules.html
+ansible-playbook -i inventory db.yaml
