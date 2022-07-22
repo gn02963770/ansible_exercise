@@ -1,0 +1,105 @@
+- name: Provisioning Server
+  hosts: all
+  become: yes
+  vars:
+          ntp_path: /etc/ntp.conf
+  tasks:
+          - name: Install NTP on CentOS
+            yum:
+                    name: "{{item}}"
+                    state: present
+            when: ansible_distribution == "CentOS"
+            loop:
+                    - ntp
+                    - wget
+                    - git
+                    - zip
+                    - unzip
+
+          - name: Install NTP on Ubuntu
+            apt:
+                    name: "{{item}}"
+                    state: present
+                    update_cache: yes
+            when: ansible_distribution == "Ubuntu"
+            loop:
+                    - ntp
+                    - wget
+                    - git
+                    - zip
+                    - unzip
+
+          - name: Start & enable NTP on RedHat
+            service:
+                    name: ntpd
+                    state: started
+                    enabled: yes
+            when: ansible_os_family == "RedHat"
+         
+          - name: Start & enable NTP on Debian
+            service:
+                    name: ntp
+                    state: started
+                    enabled: yes
+            when: ansible_os_family == "Debian"
+
+          - name: Add group
+            group:
+                    name: devops
+                    state: present
+          - name: Add users
+            user:
+                    name: "{{item}}"
+                    state: present
+                    groups: devops
+            loop: "{{usernames}}"
+
+          - name: Banner file /etc/motd
+            copy:
+                    content: "This {{ansible_distribution}} is Managed by Ansible.\n"
+                    dest: /etc/motd
+          
+          - name: Depoly NTP conf file for RedHat
+            template:
+                    src: templates/ntp_redhat.conf.j2
+                    dest: "{{ntp_path}}"
+            when: ansible_os_family == "RedHat"
+            notify:
+                    - Restart NTP on RedHat
+          
+          - name: Depoly NTP conf file for Debain
+            template:
+                    src: templates/ntp_debain.conf.j2
+                    dest: "{{ntp_path}}"
+            when: ansible_os_family == "Debain"
+            notify:
+                    - Restart NTP on Debain
+
+          - name: Dir for dev data
+            file:
+                    path: /opt/devdata
+                    state: directory
+                    mode: 0775
+            tags:
+                    - system
+            
+          - name: Deploy dev data file
+            copy:
+                    src: files/dev.txt
+                    dest: /opt/devdata/dev.txt
+
+  handlers:
+          - name: Restart NTP on Redhat
+            service:
+                    name: ntpd
+                    state: restarted
+                    enabled: yes
+            when: ansible_os_famliy == "RedHat"
+
+          - name: Restart NTP on Debain
+            service:
+                    name: ntp
+                    state: restarted
+                    enabled: yes
+            when: ansible_os_famliy == "Debain"
+
